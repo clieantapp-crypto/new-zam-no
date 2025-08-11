@@ -158,21 +158,11 @@ export default function Payment() {
   useEffect( () => {
     const visitorId = localStorage.getItem("visitor")
     if (visitorId) {
-      setupOnlineStatus(visitorId!)
+          setupOnlineStatus(visitorId!)
       const unsubscribe = onSnapshot(doc(db, "pays", visitorId), (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data() as PaymentInfo
-          if (data.step !== step) {
-            if (parseInt(data?.step?.toString()) === 5) {
-              window.location.href = '/'
-
-            } else if (parseInt(data?.step?.toString()) === 10) {
-
-              window.location.href = '/'
-            } else {
-              setstep(parseInt(data?.step?.toString()) || 1)
-            }
-          }
+       
           if (data.status === "pending") {
             setisloading(true)
           } else if (data.status === "approved") {
