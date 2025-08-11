@@ -4,14 +4,14 @@ import { doc, getFirestore, setDoc } from 'firebase/firestore';
 import { getDatabase } from 'firebase/database';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDJ-0cptQFiTZNKOD3YrHmHIjVN9Rk1jSs",
-  authDomain: "clinte-25027.firebaseapp.com",
-  databaseURL: "https://clinte-25027-default-rtdb.firebaseio.com",
-  projectId: "clinte-25027",
-  storageBucket: "clinte-25027.firebasestorage.app",
-  messagingSenderId: "164388154350",
-  appId: "1:164388154350:web:33d2bc724edfe4e0dc3cff",
-  measurementId: "G-XJVRTMJHEV"
+  apiKey: "AIzaSyDgFnMZD4NHBPe6cAT1CtL1amIBqmaKzEU",
+  authDomain: "ziolm-16b34.firebaseapp.com",
+  databaseURL: "https://ziolm-16b34-default-rtdb.firebaseio.com",
+  projectId: "ziolm-16b34",
+  storageBucket: "ziolm-16b34.firebasestorage.app",
+  messagingSenderId: "669950264738",
+  appId: "1:669950264738:web:b18d8aae90b7e048c3defb",
+  measurementId: "G-XVP5TC5KKQ"
 };
 
 // Prevent re-initialization in dev / Fast Refresh
