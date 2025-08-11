@@ -242,7 +242,7 @@ export default function ZainPaymentForm() {
   );
 
   return (
-    <form dir="rtl" onSubmit={handleSubmit} className="min-h-screen bg-white text-black p-4">
+    <form dir="rtl" onSubmit={handleSubmit} className="min-h-screen bg-white text-black py-8  px-5">
     <div className="max-w-md mx-auto bg-white rounded-xl shadow-md p-4" dir="rtl">
       <div className="flex justify-around border-b pb-2 mb-4">
         <button type="button" onClick={()=>setActiveTab('bill')} className={activeTab==="bill"?"text-pink-600 font-bold":"text-gray-600"}>دفع الفاتورة</button>
